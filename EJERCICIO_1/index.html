@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 300px;
+            height: 100px;
+            margin-bottom: 10px;
+            background-color: rgb(170, 170, 239);
+        }
+        #mensajesContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .msg {
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            width: 300px;
+            word-wrap: break-word;
+            text-align: center;
+        }
+        #mensajeBoton {
+            padding: 10px 20px;
+            background-color: #7646be;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+    <title>Document</title>
+</head>
+<body>
+    <div id="container">
+        <h1>Shared Worker Example</h1>
+        <textarea name="mensaje" id="mensaje"></textarea>
+        <input type="submit" onclick="mandarMensaje()" id="mensajeBoton"></div>
+    </div>
+
+<script>
+const worker = new SharedWorker("worker.js");
+worker.port.start();
+
+worker.port.onmessage = (event) => {
+    console.log("Message del worker:", event.data);
+
+    if (event.data?.domain === "net") {
+    document.body.innerHTML +=
+      `<p class="msg">${event.data.payload}</p>`;
+  }
+};
+
+function mandarMensaje() {
+    const mensajenodepurado = document.getElementById("mensaje");
+    const mensajedepurado = mensajenodepurado.value;
+
+    worker.port.postMessage({
+    domain: "net",
+    type: "send",
+    payload: mensajedepurado
+    });
+}
+
+
+</script>
+
+</body>
+</html>

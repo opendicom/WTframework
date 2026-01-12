@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio 2</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+
+    <h1>Ejercicio 2: Libreria con SharedWorkers</h1>
+    <input type="text" id="busquedaLibro" placeholder="Título del libro">
+    <button id="sendButton1" onclick="BuscarLibro()">Buscar Libro de la Libreria</button>
+
+    <p id="resultadoBusqueda"><strong>Resultado:</strong> </p>
+
+    <br>
+
+    <input type="text" id="nombreLibro" placeholder="Título del libro">
+    <input type="text" id="autorLibro" placeholder="Autor del libro">
+    <input type="text" id="isbnLibro" placeholder="ISBN del libro" type="number" inputmode="numeric" min="4" max="12">
+    <button id="sendButton2" onclick="añadirLibro()">Añadir Libro a la Libreria</button>
+
+    <p id="resultadoAñadir"><strong>Resultado:</strong> </p>
+
+    <script>
+        const outputBusqueda = document.getElementById("resultadoBusqueda");
+        const outputAñadir = document.getElementById("resultadoAñadir");
+        const worker = new SharedWorker("sharedworker_v3.js?v=" + Date.now());
+        console.log("📡 WORKER OBJECT:", worker);
+
+        const port = worker.port;
+
+        port.onmessage = (event) => {
+        const { type, data } = event.data || {};
+
+        if (type === "searchResult") {
+            outputBusqueda.textContent += "\n" + data;
+        }
+
+        if (type === "addResult") {
+            outputAñadir.textContent += "\n" + data;
+        }
+        };
+
+        port.start();
+
+
+        function BuscarLibro() {
+            //limpia el output
+            outputBusqueda.innerHTML = "<strong>Resultado:</strong> ";
+            //busca el titulo del libro en el input busquedaLibro y lo limpia.
+            const tituloBasico = document.getElementById('busquedaLibro').value;
+            const tituloLimpio = tituloBasico
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+
+            // cada vez que aparezca un mensaje del puerto, se ejecuta esta funcion.
+
+            console.log("MAIN: posting ping");
+            port.postMessage("ping from main");
+
+            //crea un objeto msg con la accion getBook y con el titulo "tituloLimpio", para  buscar en el indexdb.
+            const msg = { action: "getBook", payload: { titulo: tituloLimpio } };
+            console.log("MAIN: posting getBook", msg);
+            port.postMessage(msg);
+        } 
+
+        function añadirLibro(){
+            //saca la informacion de los inputs de el nuevo libro.
+            const tituloBasico = document.getElementById('nombreLibro').value;
+            const autorBasico = document.getElementById('autorLibro').value;
+            const isbnBasico = document.getElementById('isbnLibro').value;
+            //limpia el output
+            outputBusqueda.innerHTML = "<strong>Resultado: </strong> ";
+
+            //saca espacios inecesarios y pasa a minusculas del titulo.
+            const tituloLimpio = tituloBasico
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+
+            //saca espacios inecesarios y pasa a minusculas del autor.
+            const autorLimpio = autorBasico
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+
+            //saca espacios inecesarios y pasa a minusculas del isbn.
+            const isbmLimpio = isbnBasico
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+
+            //saca todo lo que no sean numeros
+            let isbnLimpio = isbnBasico.replace(/\D/g, "");
+
+            //si el isbn no contenia numeros, muestra error y no procede.
+            if (!isbnLimpio) {
+                console.log("Invalid ISBN");
+                outputAñadir.innerHTML = "<strong>Resultado:</strong> El ISBN no es válido, debe contener solo números.";
+                return;
+            }
+
+            //otra limpieza del output
+            if (isbnLimpio) {
+                outputAñadir.innerHTML = "<strong>Resultado:</strong> ";
+            }
+
+            port.onmessage = (event) => {
+                //saca la id del output donde se muestra el resultado de añadir el libro.
+                const out = document.getElementById('resultadoAñadir');
+                //si es un string lo muestra normal, si es en JSON lo convierte a string (por si acaso).
+                out.textContent += '\n' + (typeof event.data === 'string' ? event.data : JSON.stringify(event.data, null, 2));
+            };
+
+            port.start();
+
+            console.log("MAIN: posting ping");
+            port.postMessage("ping from main");
+
+            const msg = { action: "addBook", payload: { titulo: tituloLimpio, autor: autorLimpio, isbn: isbmLimpio} };
+            console.log("MAIN: posting getBook", msg);
+            port.postMessage(msg);
+        }
+    </script>
+
+</body>
+</html>

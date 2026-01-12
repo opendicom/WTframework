@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <button id="write">Escribir en OPFS</button>
+  <button id="read">Ver el OPFS</button>
+  <button id="delete">Borrar el OPFS</button>
+
+<script>
+  let fileHandle;
+
+  async function init() {
+    const root = await navigator.storage.getDirectory();
+    const dbDir = await root.getDirectoryHandle("db", { create: true });
+    fileHandle = await dbDir.getFileHandle("test.db", { create: true });
+  }
+
+  document.getElementById("write").onclick = async () => {
+    await init();
+    const writable = await fileHandle.createWritable();
+    const userText = prompt("Enter text to save:");
+    await writable.write(userText);
+    await writable.close();
+    alert("Entrada Guardada!");
+  };
+
+  document.getElementById("read").onclick = async () => {
+    await init();
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    alert(text);
+  };
+
+  document.getElementById("delete").onclick = async () => {
+    const writable = await fileHandle.createWritable();
+    await writable.write("");
+    await writable.close();
+
+    alert("Test.db eliminada");
+  };
+</script>
+
+
+</body>
+</html>

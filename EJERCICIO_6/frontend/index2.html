@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicio 2</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+
+    <h1>Ejercicio 2: Libreria con SharedWorkers</h1>
+    <input type="text" id="busquedaLibro" placeholder="Título del libro">
+    <button id="sendButton1" onclick="BuscarLibro()">Buscar Libro de la Libreria</button>
+
+    <p id="resultadoBusqueda"><strong>Resultado:</strong> </p>
+
+    <br>
+
+    <input type="text" id="nombreLibro" placeholder="Título del libro">
+    <input type="text" id="autorLibro" placeholder="Autor del libro">
+    <input type="text" id="isbnLibro" placeholder="ISBN del libro" type="number" inputmode="numeric" min="4" max="12">
+    <button id="sendButton2" onclick="añadirLibro()">Añadir Libro a la Libreria</button>
+
+    <p id="resultadoAñadir"><strong>Resultado:</strong> </p>
+
+    <script>
+        console.log("✅ index.html script loaded");
+
+        const outputBusqueda = document.getElementById("resultadoBusqueda");
+        const outputAñadir = document.getElementById("resultadoAñadir");
+
+        const worker = new SharedWorker(
+            "../backend/sharedworker_v3.js"
+        );
+        const port = worker.port;
+
+        /* 🔁 SINGLE message handler */
+        port.onmessage = (event) => {
+        const data = event.data;
+
+        // Backwards compatibility (strings)
+        if (typeof data === "string") {
+            outputBusqueda.textContent += "\n" + data;
+            outputAñadir.textContent += "\n" + data;
+            return;
+        }
+
+        // Typed messages
+        if (!data || !data.type) return;
+
+        if (data.type === "searchResult") {
+            outputBusqueda.textContent += "\n" + data.data;
+        }
+
+        if (data.type === "addResult") {
+            outputAñadir.textContent += "\n" + data.data;
+        }
+        };
+
+        port.start();
+
+        /* 🔍 Buscar libro */
+        function BuscarLibro() {
+        outputBusqueda.innerHTML = "<strong>Resultado:</strong> ";
+
+        const tituloLimpio = document.getElementById("busquedaLibro").value
+            .trim()
+            .replace(/\s+/g, " ")
+            .toLowerCase();
+
+        port.postMessage({
+            action: "getBook",
+            payload: { titulo: tituloLimpio }
+        });
+        }
+
+        /* ➕ Añadir libro */
+        function añadirLibro() {
+        outputAñadir.innerHTML = "<strong>Resultado:</strong> ";
+
+        const titulo = document.getElementById("nombreLibro").value
+            .trim().replace(/\s+/g, " ").toLowerCase();
+
+        const autor = document.getElementById("autorLibro").value
+            .trim().replace(/\s+/g, " ").toLowerCase();
+
+        const isbnRaw = document.getElementById("isbnLibro").value;
+        const isbn = isbnRaw.replace(/\D/g, "");
+
+        if (!isbn) {
+            outputAñadir.textContent += "\nISBN no válido";
+            return;
+        }
+
+        port.postMessage({
+            action: "addBook",
+            payload: { titulo, autor, isbn }
+        });
+}
+</script>
+
+
+</body>
+</html>
